@@ -1,0 +1,89 @@
+{
+  "name": "Sub-Workflow 1 - Tax Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "\n\n{\n  \"orderId\": \"ORD-MODULAR-901\",\n  \"customerName\": \"Acme Corporation\",\n  \"state\": \"CA\",\n  \"subtotal\": 1000\n}\n"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -288,
+        -16
+      ],
+      "id": "5540dd64-c262-4935-89ee-78fcded46c08",
+      "name": "Execute_Workflow_Trigger"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst order = $input.item.json;\n\nconst stateRates = {\n  CA: 0.0825,\n  NY: 0.08875,\n  TX: 0.0625,\n  FL: 0.0600\n};\n\nconst rate = stateRates[order.state] || 0.0500;\nconst subtotal = Number(order.subtotal || 0);\n\nconst taxAmount = Number((subtotal * rate).toFixed(2));\nconst grandTotal = Number((subtotal + taxAmount).toFixed(2));\n\nreturn {\n  json: {\n    orderId: order.orderId,\n    subtotal: subtotal,\n    state: order.state,\n    appliedTaxRate: rate,\n    taxAmount: taxAmount,\n    grandTotal: grandTotal,\n    taxCalculatedAt: new Date().toISOString()\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        -16
+      ],
+      "id": "76669ae9-9581-42b4-8257-09b7367d12a0",
+      "name": "Code_CalculateStateTax"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst order = $input.item.json;\n\nif (!order.state || String(order.state).trim() === \"\") {\n  throw new Error(\"CONTRACT_VIOLATION: Missing required parameter 'state'\");\n}\n\nif (order.subtotal === undefined || order.subtotal === null || order.subtotal === \"\") {\n  throw new Error(\"CONTRACT_VIOLATION: Missing required parameter 'subtotal'\");\n}\n\nconst subtotal = Number(order.subtotal);\n\nif (!Number.isFinite(subtotal) || subtotal <= 0) {\n  throw new Error(\"CONTRACT_VIOLATION: subtotal must be a positive number\");\n}\n\nreturn {\n  json: {\n    ...order,\n    state: String(order.state).trim().toUpperCase(),\n    subtotal\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        -16
+      ],
+      "id": "0c49518f-068a-4f79-be99-b60714d4eb77",
+      "name": "Code_ValidateTaxInput"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute_Workflow_Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code_ValidateTaxInput",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code_CalculateStateTax": {
+      "main": [
+        []
+      ]
+    },
+    "Code_ValidateTaxInput": {
+      "main": [
+        [
+          {
+            "node": "Code_CalculateStateTax",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "bbc51ddd-58ec-4c19-9486-15288e18faf6",
+  "meta": {
+    "instanceId": "a03c7678428ef19ededbf912f16f7d5798ec7b9ab4c17f2a2def6a9e791e7215"
+  },
+  "nodeGroups": [],
+  "id": "FPYSG3YYBtopJx2E",
+  "tags": []
+}

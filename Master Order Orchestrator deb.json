@@ -1,0 +1,235 @@
+{
+  "name": "Master Order Orchestrator deb",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        -16
+      ],
+      "id": "b1b362a9-6e0a-4d1c-9e9a-ed0198697db4",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nreturn [\n  {\n    json: {\n      orderId: \"ORD-MODULAR-901\",\n      customerName: \"Acme Corporation\",\n      state: \"CA\",\n      subtotal: 1000\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -16
+      ],
+      "id": "a10113c2-c2a6-49d2-afab-f69139652b85",
+      "name": "Code_PrepareOrder"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "FPYSG3YYBtopJx2E",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/FPYSG3YYBtopJx2E",
+          "cachedResultName": "Sub-Workflow 1 - Tax Engine"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "orderId": "={{ $json.orderId }}",
+            "customerName": "={{ $json.customerName }}",
+            "state": "={{ $json.state }}",
+            "subtotal": "={{ $json.subtotal }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "orderId",
+              "displayName": "orderId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "customerName",
+              "displayName": "customerName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "subtotal",
+              "displayName": "subtotal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        -16
+      ],
+      "id": "34adb9ba-de71-49b8-be09-0effe92d5bd5",
+      "name": "Execute_TaxEngine"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "sU3ZNlWYMRBgtzpX",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/sU3ZNlWYMRBgtzpX",
+          "cachedResultName": "Sub-Workflow 2 - Payment Gateway deb"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "orderId": "={{ $json.orderId }}",
+            "grandTotal": "={{ $json.grandTotal }}",
+            "customerName": "={{ $('Code_PrepareOrder').item.json.customerName }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "orderId",
+              "displayName": "orderId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "grandTotal",
+              "displayName": "grandTotal",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "customerName",
+              "displayName": "customerName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        448,
+        -16
+      ],
+      "id": "b0aaa27a-8220-4d0f-b58a-214e59a8e497",
+      "name": "Call 'Sub-Workflow 2 - Payment Gateway deb'"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst payment = $input.item.json;\nconst tax = $('Execute_TaxEngine').item.json;\n\nreturn {\n  json: {\n    orderId: payment.orderId,\n    customerName: payment.customerName,\n    state: tax.state,\n    subtotal: tax.subtotal,\n    taxAmount: tax.taxAmount,\n    grandTotal: tax.grandTotal,\n    paymentStatus: payment.paymentStatus,\n    transactionId: payment.transactionId,\n    orderStatus: payment.paymentStatus === \"SUCCESS\"\n      ? \"CONFIRMED\"\n      : \"PAYMENT_FAILED\",\n    confirmedAt: new Date().toISOString()\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        -16
+      ],
+      "id": "f0ba7cad-87a2-44ed-a8ad-cb38bc79d4b4",
+      "name": "Code_FinalOrderConfirmation"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Code_PrepareOrder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code_PrepareOrder": {
+      "main": [
+        [
+          {
+            "node": "Execute_TaxEngine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute_TaxEngine": {
+      "main": [
+        [
+          {
+            "node": "Call 'Sub-Workflow 2 - Payment Gateway deb'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Sub-Workflow 2 - Payment Gateway deb'": {
+      "main": [
+        [
+          {
+            "node": "Code_FinalOrderConfirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f568703a-4a5e-4ac7-8f51-eb072c2d1037",
+  "meta": {
+    "instanceId": "a03c7678428ef19ededbf912f16f7d5798ec7b9ab4c17f2a2def6a9e791e7215"
+  },
+  "nodeGroups": [],
+  "id": "SWqOKZaO1BNqiOgO",
+  "tags": []
+}

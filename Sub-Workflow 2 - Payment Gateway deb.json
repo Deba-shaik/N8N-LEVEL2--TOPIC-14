@@ -1,0 +1,69 @@
+{
+  "name": "Sub-Workflow 2 - Payment Gateway deb",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "\n{\n  \"orderId\": \"ORD-MODULAR-901\",\n  \"grandTotal\": 1082.50,\n  \"customerName\": \"Acme Corporation\"\n}\n"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -288,
+        0
+      ],
+      "id": "89d95542-f1b1-40b8-bf55-d1f2d5b03573",
+      "name": "Execute_PaymentTrigger"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst order = $input.item.json;\n\nconst amount = Number(order.grandTotal);\n\nif (!order.orderId || !Number.isFinite(amount) || amount <= 0) {\n  throw new Error(\"INVALID_PAYMENT_INPUT\");\n}\n\nreturn {\n  json: {\n    ...order,\n    paymentStatus: \"SUCCESS\",\n    transactionId: \"TXN-\" + Date.now(),\n    amountCharged: amount,\n    paymentProcessedAt: new Date().toISOString()\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -64,
+        0
+      ],
+      "id": "4140da96-bf9d-4ca5-9580-b4e8b8413388",
+      "name": "Code_SimulatePayment"
+    }
+  ],
+  "pinData": {
+    "Execute_PaymentTrigger": [
+      {
+        "json": {
+          "orderId": "ORD-MODULAR-901",
+          "grandTotal": 1082.5,
+          "customerName": "Acme Corporation"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Execute_PaymentTrigger": {
+      "main": [
+        [
+          {
+            "node": "Code_SimulatePayment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "50a39659-061d-4323-902a-3a197d69fd3d",
+  "meta": {
+    "instanceId": "a03c7678428ef19ededbf912f16f7d5798ec7b9ab4c17f2a2def6a9e791e7215"
+  },
+  "nodeGroups": [],
+  "id": "sU3ZNlWYMRBgtzpX",
+  "tags": []
+}
